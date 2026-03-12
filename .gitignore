@@ -1,0 +1,2 @@
+# Hook runtime state (circuit breaker attempt counts)
+.claude/hooks/.attempts/
