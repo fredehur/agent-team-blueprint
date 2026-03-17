@@ -35,12 +35,22 @@ Auto-detected tooling: ESLint, TypeScript, Ruff, Flake8, Mypy, `go vet`, Cargo/C
 
 ## Quick Start
 
-1. Clone this repo (or use it as a template)
-2. Open a Claude Code session in the repo
-3. Describe what you want to build
-4. Tell Claude to create a team and follow the CLAUDE.md pipeline
+### Prerequisites
 
-Agent Teams must be enabled — this is already set in `.claude/settings.json`:
+- [Claude Code](https://claude.ai/code) installed (`npm install -g @anthropic-ai/claude-code`)
+- Claude Code version **≥ 1.0** (Agent Teams require a recent release)
+- A Claude Max or API subscription
+
+### Installation
+
+```bash
+git clone https://github.com/your-org/agent-team-blueprint.git
+cd agent-team-blueprint
+```
+
+No dependencies to install — the blueprint is pure Claude Code configuration.
+
+Agent Teams are already enabled via `.claude/settings.json`:
 
 ```json
 {
@@ -50,17 +60,87 @@ Agent Teams must be enabled — this is already set in `.claude/settings.json`:
 }
 ```
 
+### Starting a session
+
+**First time only:**
+1. Open Claude Code in the repo root
+2. Run `/setup` — answers 3 questions about your project, selects which skills (superpowers) the Planner can assign to Builder tasks, writes `SKILLS.md`
+
+**Every session:**
+1. Run `/prime-dev` — loads principles, declares team structure, confirms protocol checklist
+2. Describe what you want to build
+3. Claude creates the team and runs the pipeline — you are only involved in Phase 0 (approve the blueprint) and Phase 4 (review the result)
+
+## Slash Commands (Skills)
+
+Slash commands in `.claude/commands/` are **repo-portable superpowers** — they ship with the repo and are instantly available to anyone who clones it, with no extra setup. They are plain Markdown files that Claude Code picks up automatically. When you type `/prime-dev`, Claude reads `.claude/commands/prime-dev.md` and executes the instructions inside.
+
+This blueprint ships with two commands:
+
+| Command | File | When to run |
+|---|---|---|
+| `/setup` | `.claude/commands/setup.md` | **Once, when you first clone the repo.** Asks which skills you want, writes `SKILLS.md`. |
+| `/prime-dev` | `.claude/commands/prime-dev.md` | **Every build session.** Loads principles, declares team, confirms checklist. |
+
+Run `/setup` first — it configures which skills the Planner is allowed to assign. Then `/prime-dev` before every session.
+
+### The Skills system — superpowers for your pipeline
+
+Claude Code ships with a built-in **Skills system**: a set of Anthropic-provided slash commands that give agents specialized capabilities mid-task. These are distinct from your repo's own commands — they are always available globally, no setup required.
+
+The blueprint is designed to use them. When the Planner writes a `## Task Breakdown`, the `**Skills:**` field on each task is where it assigns these superpowers to Builders:
+
+```markdown
+### Task 2: Refactor auth module
+- **Skills:** simplify
+- **Input:** `src/auth.ts`
+- **Output:** `src/auth.ts` (rewritten)
+- **Criteria:** No functions longer than 30 lines, no duplicate logic
+- **Blocked by:** Task 1
+```
+
+The Builder reads that field and invokes `/simplify` mid-execution — not at the end, but as part of producing the output. The skill runs, reviews the code, and fixes issues before the `TaskCompleted` hook fires.
+
+**Useful skills to assign in the `Skills:` field:**
+
+| Skill | When the Planner should assign it |
+|---|---|
+| `simplify` | Any task producing new code — reviews for reuse, quality, and efficiency, then fixes |
+| `excalidraw-diagram` | Architecture or data-flow tasks that benefit from a visual artifact |
+| `claude-api` | Tasks that integrate with the Anthropic SDK or Claude API |
+
+The Planner should assign skills based on task complexity — not globally, and not by default. A simple file write needs no skill. A complex refactor or AI integration task should always get one.
+
+### Adding your own commands
+
+Copy `.claude/commands/prime-dev.md` as a template and write any workflow as a Markdown file. Examples of commands teams commonly add:
+
+| Command idea | What it would do |
+|---|---|
+| `/start-feature` | Read the task, prime context, spawn Planner with the feature brief |
+| `/review-pr` | Run Validator against a PR diff and write a review report |
+| `/prime-bug` | Load only the bug-specific files + test runner context before debugging |
+
+Commands are committed to the repo — your whole team gets the same workflow, no individual configuration needed.
+
 ## Project Structure
 
 ```
 .claude/
   settings.json              # Agent Teams enabled + hook configuration
+  commands/
+    setup.md                 # One-time setup wizard — selects skills, writes SKILLS.md
+    prime-dev.md             # Pre-build ritual slash command
+  agents/
+    planner.md               # Opus — blueprint author and task decomposer
+    builder.md               # Sonnet — implementation agent
+    validator.md             # Sonnet — read-only acceptance gate
   hooks/validators/
     teammate-idle.sh         # Blueprint completeness gate (Planner)
     task-completed.sh        # Linter/type check gate with circuit breaker (Builders)
 docs/
   agent-design-principles.md # Disler/Stripe foundation principles
-  specs/                     # Design spec
+  specs/                     # Design specs
 templates/
   blueprint.md               # Template the Planner fills out
 ```
