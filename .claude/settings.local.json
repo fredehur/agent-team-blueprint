@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la .claude/hooks/validators/ 2>/dev/null; echo \"---\"; ls -la .claude/hooks/ 2>/dev/null; echo \"---\"; find . -name \"*.sh\" -o -name \"*.js\" -o -name \"*.py\" | head -20)",
+      "Bash(chmod +x .claude/hooks/validators/teammate-idle.sh .claude/hooks/validators/task-completed.sh)",
+      "Bash(git remote:*)",
+      "Bash(git branch:*)",
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Read(//c/Users/frede/CRQ-agent-workspace/**)",
+      "Read(//c/Users/frede/**)",
+      "Bash(cp C:/Users/frede/agent-team-blueprint/.claude/hooks/validators/task-completed.sh C:/Users/frede/CRQ-agent-workspace/.claude/hooks/validators/task-completed.sh && chmod +x C:/Users/frede/CRQ-agent-workspace/.claude/hooks/validators/task-completed.sh)"
+    ]
+  }
+}

@@ -48,10 +48,14 @@ Only Phase 0 and Phase 4 involve you. See `docs/specs/2026-03-12-agent-team-blue
 
 ```
 .claude/
-  settings.json        # CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS enabled
-  hooks/validators/    # TeammateIdle + TaskCompleted gate scripts
+  settings.json           # CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS enabled
+  agents/                 # planner.md, builder.md, validator.md
+  commands/prime-dev.md   # Pre-build ritual — load before every session
+  hooks/validators/       # TeammateIdle + TaskCompleted gate scripts
 docs/
-  agent-design-principles.md    # Disler/Stripe foundation principles
+  agent-design-principles.md    # Disler/Stripe agentic engineering blueprint
+  skill-contract-principles.md  # Skill contracts, task ancestry, skill refinement (universal)
+  agent-boundary-principles.md  # Agent vs. code boundary rules — Planner reads this
   specs/                        # Design specs
 templates/
   blueprint.md                  # Blueprint template the Planner fills out

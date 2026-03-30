@@ -2,9 +2,16 @@
 
 Run this at the start of any development session. I must respond to each checkpoint before touching code.
 
-## Step 1 — Read Principles
+## Step 1 — Load Principles
 
-Read `docs/agent-design-principles.md` in full. Confirm with: "Principles loaded."
+Read these docs in full:
+
+1. `docs/agent-design-principles.md` — Disler agentic engineering blueprint
+2. `docs/skill-contract-principles.md` — skill contracts, task ancestry, skill refinement
+
+Confirm with: "Principles loaded — [Disler blueprint / Skill contracts]."
+
+Note: `docs/agent-boundary-principles.md` is loaded by the Planner agent, not here. It governs task decomposition decisions, not session protocol.
 
 ## Step 2 — Declare Team Structure
 
