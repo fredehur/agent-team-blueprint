@@ -56,7 +56,9 @@ docs/
   agent-design-principles.md    # Disler/Stripe agentic engineering blueprint
   skill-contract-principles.md  # Skill contracts, task ancestry, skill refinement (universal)
   agent-boundary-principles.md  # Agent vs. code boundary rules — Planner reads this
-  specs/                        # Design specs
+  agent-design-process/         # How to design agent systems — process guides, build upon over time
+    how-to-design-agent-systems.md
+  specs/                        # Design specs (per-project, dated)
 templates/
   blueprint.md                  # Blueprint template the Planner fills out
 ```
