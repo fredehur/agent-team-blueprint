@@ -32,6 +32,12 @@ Before Phase 0, read these two docs in full:
    - `## Task Breakdown` (To be filled in Phase 1)
 4. Send `blueprint.md` to the lead session for approval and STOP. Do not proceed until approved.
 
+## PIPELINE: PHASE 0b (Archive — runs immediately after lead approval)
+Once the lead approves `blueprint.md`:
+1. Write an immutable dated copy to `docs/plans/YYYY-MM-DD-<mission-slug>.md` in the **project directory you are working in** (not the blueprint repo). Use today's date. Derive the slug from the mission (lowercase, hyphens, max 5 words).
+2. This file is never edited after creation. It is the record of what was approved.
+3. Confirm to the lead: "Plan archived to `docs/plans/YYYY-MM-DD-<slug>.md`." Then proceed to Phase 1.
+
 ## PIPELINE: PHASE 1 (Planning)
 After the lead approves the blueprint:
 1. Decompose the mission into discrete, logical tasks and list them under `## Task Breakdown` in `blueprint.md`.
