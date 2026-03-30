@@ -15,14 +15,14 @@ Note: `docs/agent-boundary-principles.md` is loaded by the Planner agent, not he
 
 ## Step 2 — Declare Team Structure
 
-State the team I will use for this session:
+Model assignments are fixed. Do not deviate without stating a reason.
 
-- **Orchestrator:** [model] — role
-- **Builder(s):** [model] — what they will build
-- **Validator(s):** [model] — what they will verify
-- **Parallelizable tasks:** [list or "none"]
+- **Orchestrator: Opus** — coordinate, define contracts, validate final output. Never writes implementation code.
+- **Builder(s): Sonnet** — one sub-agent per independent workstream. State what each will build.
+- **Validator: Sonnet** — cross-checks all builder output against the spec before the orchestrator accepts it.
+- **Parallelizable tasks:** [list tasks that can run concurrently, or "none"]
 
-If the task is trivial (single file, <3 steps), state why a team is not warranted.
+If the task is trivial (single file, <3 steps), state why a team is not warranted. Trivial tasks may use Sonnet directly — no Opus required.
 
 ## Step 3 — Confirm Protocol Checklist
 
