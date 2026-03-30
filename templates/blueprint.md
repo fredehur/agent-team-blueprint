@@ -36,14 +36,18 @@
 
 ### Task 1: [name]
 - **Skills:** [none | list of skills assigned by Planner]
-- **Input:** files to read
-- **Output:** files to produce
-- **Criteria:** what passes
+- **Input:** exact files to read — nothing outside this list
+- **Output:** exact files to produce — nothing outside this list
+- **Feeds into:** [next task / Validator / final deliverable]
+- **Context:** one sentence — why this task exists and what depends on it
+- **Criteria:** what passes — machine-checkable where possible
 - **Blocked by:** nothing | Task N
 
 ### Task 2: [name]
 - **Skills:**
 - **Input:**
 - **Output:**
+- **Feeds into:**
+- **Context:**
 - **Criteria:**
 - **Blocked by:**

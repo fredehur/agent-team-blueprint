@@ -72,7 +72,7 @@ if [[ ${#MISSING[@]} -gt 0 ]]; then
 fi
 
 # Validate Task Breakdown has at least one task with required fields
-TASK_FIELDS=("Skills:" "Input:" "Output:" "Criteria:" "Blocked by:")
+TASK_FIELDS=("Skills:" "Input:" "Output:" "Feeds into:" "Context:" "Criteria:" "Blocked by:")
 TASK_SECTION=$(echo "$CONTENT" | sed -n '/^## Task Breakdown/,//p')
 
 if ! echo "$TASK_SECTION" | grep -q "^### Task"; then
@@ -93,7 +93,7 @@ if [[ ${#MISSING_FIELDS[@]} -gt 0 ]]; then
     echo "  - **${f}**" >&2
   done
   echo "" >&2
-  echo "Every task must have: Skills, Input, Output, Criteria, Blocked by." >&2
+  echo "Every task must have: Skills, Input, Output, Feeds into, Context, Criteria, Blocked by." >&2
   exit 2
 fi
 
