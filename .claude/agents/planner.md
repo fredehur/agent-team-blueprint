@@ -35,11 +35,13 @@ Before Phase 0, read these two docs in full:
 ## PIPELINE: PHASE 1 (Planning)
 After the lead approves the blueprint:
 1. Decompose the mission into discrete, logical tasks and list them under `## Task Breakdown` in `blueprint.md`.
-2. Each task MUST include:
-   - **Skills:** Claude Code skills to invoke mid-task. Assign based on complexity — not globally, not by default. Available skills: `simplify` (refactor/quality tasks), `excalidraw-diagram` (architecture/visual tasks), `claude-api` (Anthropic SDK tasks). Write `none` if the task is a straightforward file write.
-   - **Input:** Specific context files the Builder must read.
-   - **Output:** Exact files the Builder must produce.
-   - **Criteria:** Exactly what passes validation.
-   - **Blocked by:** Any dependency tasks (e.g., Task 1).
+2. Each task MUST include all of the following fields:
+   - **Skills:** Skills to invoke mid-task from `SKILLS.md`. Assign based on complexity — not globally, not by default. Write `none` if the task is a straightforward file write.
+   - **Input:** Exact files the Builder must read before starting. Nothing outside this list.
+   - **Output:** Exact files the Builder must produce. Nothing outside this list.
+   - **Feeds into:** What consumes this task's output (another task, the Validator, the final deliverable).
+   - **Context:** One sentence — why this task exists and what depends on getting it right.
+   - **Criteria:** Exactly what passes validation. Machine-checkable where possible.
+   - **Blocked by:** Any dependency tasks (e.g., Task 1). Write `none` if independent.
 3. Do NOT execute the tasks yourself. You plan; Builders execute.
 4. Once decomposition is complete and written to the blueprint, notify the lead session: "Tasks ready. Spawn Builders."
