@@ -88,6 +88,15 @@ Run `/setup` first — it configures which skills the Planner is allowed to assi
 
 Claude Code ships with a built-in **Skills system**: a set of Anthropic-provided slash commands that give agents specialized capabilities mid-task. These are distinct from your repo's own commands — they are always available globally, no setup required.
 
+The blueprint supports two skill sources — pick whichever fits:
+
+| Path | How | When |
+|---|---|---|
+| **Built-in only** | Select from the 4 built-in Claude Code skills during `/setup` | Fastest start, no extra repo needed |
+| **Private skills repo** | Point `/setup` at your own `github.com/you/agent-skills` registry | You have domain-specific skills beyond the built-ins |
+
+Both paths produce the same `SKILLS.md` output — `/setup` asks which path you want upfront.
+
 The blueprint is designed to use them. When the Planner writes a `## Task Breakdown`, the `**Skills:**` field on each task is where it assigns these superpowers to Builders:
 
 ```markdown
