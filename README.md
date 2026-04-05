@@ -40,6 +40,7 @@ Auto-detected tooling: ESLint, TypeScript, Ruff, Flake8, Mypy, `go vet`, Cargo/C
 - [Claude Code](https://claude.ai/code) installed (`npm install -g @anthropic-ai/claude-code`)
 - Claude Code version **≥ 1.0** (Agent Teams require a recent release)
 - A Claude Max or API subscription
+- [jcodemunch MCP server](https://github.com/jcodemunch/jcodemunch) configured — used by the Orchestrator for indexed code navigation (see [Code Navigation](#code-navigation) below)
 
 ### Installation
 
@@ -153,6 +154,22 @@ docs/
 templates/
   blueprint.md               # Template the Planner fills out
 ```
+
+## Code Navigation
+
+The Primary Orchestrator uses **jcodemunch** — an MCP server that indexes the codebase and exposes structured symbol navigation. This is a Context Engineering requirement: the orchestrator must understand scope before delegating, without polluting its context window by reading full files.
+
+| Task | Tool to use |
+|---|---|
+| Find where a function is defined | `search_symbols` |
+| See all functions/classes in a file | `get_file_outline` |
+| Full symbol map of the codebase | `get_repo_outline` |
+| Jump straight to a function body | `get_symbol` |
+| Text search across indexed files | `search_text` |
+
+**Rule:** Orchestrators use indexed navigation. Raw grep/cat/read is a fallback only — for config files, markdown, or data files not covered by the index.
+
+After cloning, run `index_folder` once to build the index. Re-run after significant file additions.
 
 ## Core Principles
 
