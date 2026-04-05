@@ -121,31 +121,22 @@ The Builder reads that field and invokes `/simplify` mid-execution — not at th
 
 The Planner should assign skills based on task complexity — not globally, and not by default. A simple file write needs no skill. A complex refactor or AI integration task should always get one.
 
-### Which superpowers skills overlap with this blueprint — and must not be used
+### When to use superpowers skills
 
-The blueprint already owns parallel execution, subagent dispatch, and task orchestration. Skills that re-solve those things create a competing layer.
-
-**Never assign these skills — they duplicate the protocol:**
-
-| Skill | Why it overlaps |
-|---|---|
-| `superpowers:dispatching-parallel-agents` | Blueprint mandates `run_in_background: true` as the default. This skill plans what the protocol already enforces. |
-| `superpowers:subagent-driven-development` | Builder/Validator pairing + PITER is the blueprint's execution model. Same pattern, different wrapper. |
-| `superpowers:executing-plans` | Explicitly defers to `subagent-driven-development` when subagents are available — which is always in this setup. Dead skill. |
-
-**Use these as bookends around the blueprint — before and after execution:**
+Skills are the bookends around the blueprint. One skill per phase — the blueprint owns everything in between.
 
 | Phase | Skill |
 |---|---|
-| Before any new feature or behavior change | `superpowers:brainstorming` — hard gate, no code without approved design |
-| Before multi-step implementation | `superpowers:writing-plans` |
-| Before claiming any task done | `superpowers:verification-before-completion` |
-| After completing a major task | `superpowers:requesting-code-review` |
-| When receiving review feedback | `superpowers:receiving-code-review` |
-| Implementation complete, deciding how to integrate | `superpowers:finishing-a-development-branch` |
-| When hitting a bug | `superpowers:systematic-debugging` — root cause before any fix |
+| New feature or behavior change | `superpowers:brainstorming` — hard gate, no code without approved design |
+| Multi-step implementation | `superpowers:writing-plans` — produces the plan |
+| **Blueprint executes** | TeamCreate → Builder → Validator → TeamDelete |
+| Before claiming done | `superpowers:verification-before-completion` — evidence before assertions |
+| After major task | `superpowers:requesting-code-review` |
+| Receiving review feedback | `superpowers:receiving-code-review` |
+| Ready to integrate | `superpowers:finishing-a-development-branch` |
+| Hitting a bug | `superpowers:systematic-debugging` — root cause before any fix |
 
-See [`docs/superpowers-skills-integration.md`](docs/superpowers-skills-integration.md) for full rationale.
+See [`docs/superpowers-skills-integration.md`](docs/superpowers-skills-integration.md) for the full reference.
 
 ### Adding your own commands
 
