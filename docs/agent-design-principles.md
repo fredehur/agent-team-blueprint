@@ -159,7 +159,7 @@ True impact is achieved by "scaling compute to scale confidence." We move away f
 
 ### Role Definitions
 
-- **Primary Orchestrator:** The mission-level Lead Engineer agent that manages strategy, the task list, and delegates. It does not code; it conducts. It remains the single point of truth for the mission objective, managing dependencies and communicating via `send_message`.
+- **Primary Orchestrator:** The mission-level Lead Engineer agent that manages strategy, the task list, and delegates. It does not code; it conducts. It remains the single point of truth for the mission objective, managing dependencies and communicating via `send_message`. When navigating the codebase to understand scope or delegate tasks, the orchestrator MUST use indexed code navigation tools (e.g. `search_symbols`, `get_file_outline`, `get_repo_outline`, `get_symbol`) rather than reading raw files with grep/cat. Indexed navigation is a Context Engineering requirement — it reduces token waste and provides structured symbol-level insight without polluting the orchestrator's context window with full file contents.
 - **Builder Agents:** Dedicated to implementation and code generation. Operate within hyper-focused context windows. Mandate: single-task execution — write code, run initial checks, and report.
 - **Validator Agents:** Critical "Upstream" agents that check the Builder's work. Separate agents whose sole purpose is to verify output — running tests, linters, compilers, and reporting success or failure back to the orchestrator.
 
