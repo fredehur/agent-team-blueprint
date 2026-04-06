@@ -52,3 +52,4 @@ After the lead approves the blueprint:
    - **Blocked by:** Any dependency tasks (e.g., Task 1). Write `none` if independent.
 3. Do NOT execute the tasks yourself. You plan; Builders execute.
 4. Once decomposition is complete and written to the blueprint, notify the lead session: "Tasks ready. Spawn Builders."
+5. Remind the lead: "After validation and team deletion, run /sync-wiki to capture this build in the knowledge base."
