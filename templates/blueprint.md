@@ -33,6 +33,7 @@
 
 ## Task Breakdown
 <!-- Planner decomposes the mission into discrete, ordered tasks. Each task gets assigned skills based on complexity. -->
+<!-- BOUNDARY RULE: Builder runs as a background agent with Read/Write/Edit/Glob/Grep only — NO Bash. Every Criteria entry must be checkable by re-reading the produced files. Anything that requires running tests, linters, builds, or scripts goes into the Verify (orchestrator runs) field, never into Criteria. The TeammateIdle gate enforces this. -->
 
 ### Task 1: [name]
 - **Skills:** [none | list of skills assigned by Planner]
@@ -40,7 +41,8 @@
 - **Output:** exact files to produce — nothing outside this list
 - **Feeds into:** [next task / Validator / final deliverable]
 - **Context:** one sentence — why this task exists and what depends on it
-- **Criteria:** what passes — machine-checkable where possible
+- **Criteria:** static checks the Builder can verify by re-reading its output (file exists, contains substring X, defines function Y, balanced syntax, no forbidden tokens). NO "tests pass", "lint passes", "builds successfully" — those go below.
+- **Verify (orchestrator runs):** exact shell commands the lead session will run after the Builder reports done — `pytest -q`, `ruff check .`, `npm run build`, etc. Write `none` only for pure-text deliverables that need no execution.
 - **Blocked by:** nothing | Task N
 
 ### Task 2: [name]
@@ -50,4 +52,5 @@
 - **Feeds into:**
 - **Context:**
 - **Criteria:**
+- **Verify (orchestrator runs):**
 - **Blocked by:**

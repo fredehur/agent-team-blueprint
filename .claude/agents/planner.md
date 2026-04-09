@@ -48,8 +48,23 @@ After the lead approves the blueprint:
    - **Output:** Exact files the Builder must produce. Nothing outside this list.
    - **Feeds into:** What consumes this task's output (another task, the Validator, the final deliverable).
    - **Context:** One sentence — why this task exists and what depends on getting it right.
-   - **Criteria:** Exactly what passes validation. Machine-checkable where possible.
+   - **Criteria:** Exactly what passes validation — but ONLY checks the Builder can perform with Read/Write/Edit/Glob/Grep. See the hard rule below.
+   - **Verify (orchestrator runs):** Exact shell commands the orchestrator (lead session) will run after the Builder reports done — tests, linters, builds, scripts. Write `none` only if the task is a pure-text deliverable that needs no execution to validate.
    - **Blocked by:** Any dependency tasks (e.g., Task 1). Write `none` if independent.
+
+### HARD RULE — Criteria must be shell-free
+
+The Builder runs as a background agent with tools `Read, Write, Edit, Glob, Grep`. **It cannot run Bash.** Every entry in the **Criteria** field must be satisfiable by re-reading the produced files alone — file existence, content substrings, function/symbol presence, balanced syntax markers, absence of forbidden tokens. Anything that requires *executing* the code (running tests, linters, type checkers, the script itself, a build, a server) belongs in **Verify (orchestrator runs)**, never in Criteria.
+
+Concretely, the following phrases are FORBIDDEN in any Criteria field:
+- "tests pass", "all tests passing", "pytest passes", "npm test passes"
+- "lint passes", "ruff passes", "eslint passes", "no lint errors"
+- "type-check passes", "mypy passes", "tsc passes"
+- "builds successfully", "compiles", "npm run build succeeds"
+- "the script runs", "the command outputs", "the server starts"
+
+If a task's correctness depends on any of these, write the *static* shape of the code into Criteria (e.g., "file contains a `def test_add` function calling `calculate(2,'+',3)` and asserting `5`") and put the actual `pytest`/`ruff`/`tsc`/etc. invocation into **Verify (orchestrator runs)**. The `TeammateIdle` quality gate will reject your blueprint if any Criteria entry contains a forbidden phrase or if the Verify field is missing. This is not a stylistic preference — it is the only way Builders complete tasks involving runnable code without stalling.
+
 3. Do NOT execute the tasks yourself. You plan; Builders execute.
 4. Once decomposition is complete and written to the blueprint, notify the lead session: "Tasks ready. Spawn Builders."
 5. Remind the lead: "After validation and team deletion, run /sync-wiki to capture this build in the knowledge base."

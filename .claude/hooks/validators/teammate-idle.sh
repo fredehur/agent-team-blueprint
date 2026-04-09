@@ -72,7 +72,7 @@ if [[ ${#MISSING[@]} -gt 0 ]]; then
 fi
 
 # Validate Task Breakdown has at least one task with required fields
-TASK_FIELDS=("Skills:" "Input:" "Output:" "Feeds into:" "Context:" "Criteria:" "Blocked by:")
+TASK_FIELDS=("Skills:" "Input:" "Output:" "Feeds into:" "Context:" "Criteria:" "Verify (orchestrator runs):" "Blocked by:")
 TASK_SECTION=$(echo "$CONTENT" | sed -n '/^## Task Breakdown/,//p')
 
 if ! echo "$TASK_SECTION" | grep -q "^### Task"; then
@@ -93,7 +93,69 @@ if [[ ${#MISSING_FIELDS[@]} -gt 0 ]]; then
     echo "  - **${f}**" >&2
   done
   echo "" >&2
-  echo "Every task must have: Skills, Input, Output, Feeds into, Context, Criteria, Blocked by." >&2
+  echo "Every task must have: Skills, Input, Output, Feeds into, Context, Criteria, Verify (orchestrator runs), Blocked by." >&2
+  exit 2
+fi
+
+# --- Criteria boundary scan: reject shell-dependent Criteria ---
+# Builders cannot run Bash. Any Criteria entry that depends on executing
+# code (tests, linters, builds, scripts) belongs in Verify (orchestrator runs),
+# not in Criteria. Scan each Criteria block for forbidden execution verbs.
+#
+# Forbidden phrases — case-insensitive substring match:
+FORBIDDEN_PATTERNS=(
+  "tests? pass"
+  "all tests passing"
+  "pytest passes"
+  "npm test passes"
+  "lint passes"
+  "ruff passes"
+  "eslint passes"
+  "no lint errors"
+  "type[- ]?check passes"
+  "mypy passes"
+  "tsc passes"
+  "builds successfully"
+  "compiles"
+  "npm run build succeeds"
+  "the script runs"
+  "the command outputs"
+  "the server starts"
+)
+
+# Extract the content of every **Criteria:** field block. A Criteria block
+# starts at "**Criteria:**" and ends at the next "**" field (e.g.
+# "**Verify" or "**Blocked"). We collect all of them into one buffer for
+# pattern matching.
+CRITERIA_BUFFER=$(echo "$TASK_SECTION" | awk '
+  /\*\*Criteria:\*\*/ { in_block=1; next }
+  in_block && /^\*\*[A-Z]/ { in_block=0 }
+  in_block { print }
+')
+
+VIOLATIONS=()
+for pattern in "${FORBIDDEN_PATTERNS[@]}"; do
+  if echo "$CRITERIA_BUFFER" | grep -Eqi "$pattern"; then
+    # Capture the offending line(s) for the error message
+    matched_lines=$(echo "$CRITERIA_BUFFER" | grep -Ei "$pattern" | head -3)
+    VIOLATIONS+=("Forbidden phrase \"${pattern}\" found in a Criteria field:")
+    while IFS= read -r line; do
+      [[ -n "$line" ]] && VIOLATIONS+=("    ${line}")
+    done <<< "$matched_lines"
+  fi
+done
+
+if [[ ${#VIOLATIONS[@]} -gt 0 ]]; then
+  echo "Blueprint Criteria contain shell-dependent verbs. Builders cannot run Bash —" >&2
+  echo "those checks belong in **Verify (orchestrator runs):**, not **Criteria:**." >&2
+  echo "" >&2
+  for v in "${VIOLATIONS[@]}"; do
+    echo "  ${v}" >&2
+  done
+  echo "" >&2
+  echo "Fix: rewrite each offending Criteria as a STATIC check (file existence, content" >&2
+  echo "substring, function presence, balanced syntax) and move the execution check to" >&2
+  echo "the task's Verify (orchestrator runs) field. The lead will run those commands." >&2
   exit 2
 fi
 
