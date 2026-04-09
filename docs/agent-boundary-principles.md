@@ -163,8 +163,42 @@ The gate is always code except for prose quality, which can be an agent acting a
 > An agent that controls its own retry loop is an agent that can get stuck forever.
 > An agent that does arithmetic is an agent that will eventually hallucinate a number.
 > An agent that routes work is an agent that will eventually skip a step.
+> An agent that runs Bash in the background is an agent that will block forever.
 
 Put the agent in charge of what it's good at. Put code in charge of everything else.
+
+---
+
+## Tool Permission Model: Background Agents and Bash
+
+The agent-vs-code boundary has a concrete enforcement mechanism in Claude Code: **background agents cannot use Bash**.
+
+### The constraint
+
+`bypassPermissions` reliably bypasses approval for: Read, Edit, Write, Glob, Grep.
+`bypassPermissions` does **not** reliably bypass Bash. Bash has a harder permission gate that requires a user to approve — and background agents have no user present. The call blocks indefinitely.
+
+### Why this is correct (not just a workaround)
+
+Bash is shell execution — running tests, linters, scripts, compilers. These are deterministic operations. By the boundary principle, **code owns deterministic execution**. The orchestrator (foreground, user-present) is the right owner.
+
+Agents own reasoning: reading code, analyzing, writing implementations, judging quality. These map exactly to Read, Edit, Write, Glob, Grep — the tools that work in the background.
+
+### The pattern
+
+```
+Builder (background)  → Read, Edit, Write, Glob, Grep → reports what changed
+Orchestrator (foreground) → runs Bash (tests, linters)  → relays results if builder needs to iterate
+Validator (background) → Read, Glob, Grep              → reports pass/fail + recommended commands
+Orchestrator (foreground) → runs recommended commands    → accepts or sends back for revision
+```
+
+### What this means for agent design
+
+When writing agent prompts (`.claude/agents/*.md`):
+- **Never list Bash** in the `tools:` frontmatter for agents that run in the background.
+- **Always include a report step** where the agent lists what commands the orchestrator should run.
+- **Design for iteration:** the orchestrator may relay test failures back to the builder for a fix-and-report cycle.
 
 ---
 

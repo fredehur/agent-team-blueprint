@@ -151,6 +151,46 @@ The default `mcp.json` is a token-drain. Preloading unused MCP servers can waste
 - **Policy:** Eliminate the default configuration.
 - **Execution:** Hand-fire specialized configurations using `--mcp-config` or `--strict-mcp-config` to load only the tools required for the immediate session (e.g., just the Playwright or Filesystem tool).
 
+### Code Navigation: jcodemunch-First Policy
+
+Never open a file to find one function. The codebase is indexed — use it.
+
+```
+Read / Grep / Glob / Bash  →  last resort only
+                               (markdown, JSON data, surrounding context not in index)
+jcodemunch-mcp             →  default for ALL code navigation
+```
+
+Installing the MCP makes tools available. It does **not** change agent behavior. Without an explicit policy in CLAUDE.md or enforced hooks, agents default to old habits (grep/cat). Bake the policy in; do not rely on the agent remembering.
+
+**Session startup (every session):**
+```json
+resolve_repo: { "path": "." }
+```
+If not indexed: `index_folder { "path": "." }`. After any file edit: `index_file { "path": "/abs/path/to/file" }`.
+
+**Quick decision table:**
+
+| Task | Tool |
+|---|---|
+| Symbol by name | `search_symbols` |
+| Partial name / typo | `search_symbols(fuzzy=true)` |
+| Concept ("db connection" when code says "db_pool") | `search_symbols(semantic=true)` |
+| All functions/classes in a file | `get_file_outline` |
+| Full symbol map of codebase | `get_repo_outline` |
+| Jump to a function body | `get_symbol_source` |
+| Symbol + its imports | `get_context_bundle` |
+| Best-fit context within token budget | `get_ranked_context(query, token_budget)` |
+| Text / comment / TODO search | `search_text` |
+| What imports a file | `find_importers` |
+| Where is an identifier used | `find_references` |
+| What breaks if I change X | `get_blast_radius(include_depth_scores=true)` |
+| Symbols changed in a git diff | `get_changed_symbols` |
+| Dead / unreachable code | `find_dead_code` |
+| Stale symbol refs in CLAUDE.md | `audit_agent_config` |
+
+**Full reference:** `docs/tools/jcodemunch-mcp.md` → Enforcement via Hooks section for Read Guard / Edit Guard / Index Hook scripts.
+
 ---
 
 ## 4. Agent Team Architecture: Orchestration and Delegation
@@ -159,19 +199,31 @@ True impact is achieved by "scaling compute to scale confidence." We move away f
 
 ### Role Definitions
 
-- **Primary Orchestrator:** The mission-level Lead Engineer agent that manages strategy, the task list, and delegates. It does not code; it conducts. It remains the single point of truth for the mission objective, managing dependencies and communicating via `send_message`. When navigating the codebase to understand scope or delegate tasks, the orchestrator MUST use indexed code navigation tools (e.g. `search_symbols`, `get_file_outline`, `get_repo_outline`, `get_symbol`) rather than reading raw files with grep/cat. Indexed navigation is a Context Engineering requirement — it reduces token waste and provides structured symbol-level insight without polluting the orchestrator's context window with full file contents.
-- **Builder Agents:** Dedicated to implementation and code generation. Operate within hyper-focused context windows. Mandate: single-task execution — write code, run initial checks, and report.
-- **Validator Agents:** Critical "Upstream" agents that check the Builder's work. Separate agents whose sole purpose is to verify output — running tests, linters, compilers, and reporting success or failure back to the orchestrator.
+- **Primary Orchestrator:** The mission-level Lead Engineer agent that manages strategy, the task list, and delegates. It does not code; it conducts. It remains the single point of truth for the mission objective, managing dependencies and communicating via `send_message`. The orchestrator is the only role that runs in the foreground with a user present — this means it is the **only role that can reliably execute Bash commands** (see Tool Permission Model below). When navigating the codebase to understand scope or delegate tasks, the orchestrator MUST use indexed code navigation tools (e.g. `search_symbols`, `get_file_outline`, `get_repo_outline`, `get_symbol`) rather than reading raw files with grep/cat. Indexed navigation is a Context Engineering requirement — it reduces token waste and provides structured symbol-level insight without polluting the orchestrator's context window with full file contents.
+- **Builder Agents:** Dedicated to implementation and code generation. Operate within hyper-focused context windows. Mandate: single-task execution — read code, write code, and report. Builders run as **background agents** and therefore **must not use Bash** (see Tool Permission Model). They implement via Read, Edit, Write, Glob, and Grep only. When verification requires shell execution (tests, linters, scripts), the builder reports done and the orchestrator runs those commands. Like the orchestrator, builders MUST use jcodemunch indexed navigation (`get_file_outline`, `search_symbols`, `get_symbol_source`) before opening raw files. Reading full files when the index can answer the query is a context waste and an architectural failure.
+- **Validator Agents:** Critical "Upstream" agents that check the Builder's work. Separate agents whose sole purpose is to verify output by reading and reviewing code, then reporting success or failure back to the orchestrator. Validators are **read-only** — they use Read, Glob, and Grep. Like builders, they run in the background and **must not use Bash**. When validation requires shell execution (running tests, compiling), the orchestrator runs those commands based on the validator's review.
+
+### Tool Permission Model
+
+Background agents (builders, validators) cannot reliably execute Bash commands. The `bypassPermissions` flag works for Read, Edit, Write, Glob, and Grep — but Bash has a harder permission gate that requires user approval. Since background agents have no user present, Bash calls block indefinitely.
+
+| Role | Mode | Tools | Bash? | Why |
+|---|---|---|---|---|
+| **Orchestrator** | foreground | All | Yes | User present to approve |
+| **Builder** | background, `bypassPermissions` | Read, Edit, Write, Glob, Grep | **No** | No user to approve Bash |
+| **Validator** | background, `bypassPermissions` | Read, Glob, Grep | **No** | Read-only + no user to approve |
+
+**The orchestrator owns all shell execution.** After a builder reports done, the orchestrator runs tests, linters, and scripts. After a validator reports its review, the orchestrator runs any verification commands the validator recommends. This is not a workaround — it aligns with the boundary principle that deterministic execution (tests, linters, compilers) is owned by code/orchestration, not by reasoning agents.
 
 ### The Builder vs. Validator Pairing
 
 The most foundational team structure in agentic engineering is the **Builder vs. Validator pairing**. By doubling the compute investment, we maximize trust and reliability ("2x the compute to 10x the trust"):
 
-| Builder Role | Validator Role |
-|---|---|
-| Implementation: writes code, runs local validation hooks (Ruff, MyPy), and reports results. | QA & Audit: checks compilation, audits logs, runs end-to-end tests, and provides feedback loops for failure. |
+| Builder Role | Validator Role | Orchestrator Role |
+|---|---|---|
+| Implementation: reads code, writes code, reports what was changed and what needs verification. | QA & Audit: reads code, reviews against spec, reports pass/fail with evidence. | Execution: runs linters, tests, scripts after builder/validator report. Owns all Bash. |
 
-Never allow a "Builder" agent to commit code without a "Validator" agent verifying the output against the original spec.
+Never allow a "Builder" agent to commit code without a "Validator" agent verifying the output against the original spec. Never allow a background agent to run Bash — the orchestrator owns all shell execution.
 
 ### Self-Validating Meta-Prompts and the Stop Hook
 

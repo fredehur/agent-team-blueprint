@@ -11,16 +11,17 @@
 
 A skill is a markdown document. Not a Python class, not a function wrapper, not a prompt string inside application code.
 
-Every skill must define exactly four things:
+Every skill must define exactly five things:
 
 | Field | Description |
 |---|---|
 | **Purpose** | One sentence. What judgment work does this skill perform? |
 | **Inputs** | Typed. What files, data, or context does it receive? |
 | **Outputs** | Typed. What does it write, return, or produce? |
+| **Dependencies** | What runtime resources must exist before this skill can run — API keys, external services, database connections, environment variables. These are not data inputs; they are infrastructure preconditions. |
 | **Quality gate** | What must be true before this skill exits and returns control? |
 
-A skill missing any of these four fields is not a skill — it is a prompt. Prompts are not auditable, not portable, and not improvable without touching application code.
+A skill missing any of these five fields is not a skill — it is a prompt. Prompts are not auditable, not portable, and not improvable without touching application code.
 
 **The completeness test:** Hand a fresh agent only this file and the declared inputs. If it cannot produce the same quality output as the original, the contract is incomplete. Fix the contract, not the agent.
 
@@ -95,6 +96,6 @@ Skill contracts make the agent side more reliable. They do not expand agent resp
 
 | Principle | Rule | Violation |
 |---|---|---|
-| Skills are files | Four fields: purpose, inputs, outputs, quality gate | Prompt string in application code |
+| Skills are files | Five fields: purpose, inputs, outputs, dependencies, quality gate | Prompt string in application code |
 | Tasks carry ancestry | `depends_on`, `feeds_into`, `context` | "Write the report" with no context |
 | Correction triggers refinement | Three validator rejections = mandatory refinement pass | Skill that runs indefinitely without updating |
