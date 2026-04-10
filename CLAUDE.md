@@ -21,11 +21,13 @@ See `docs/agent-design-principles.md` for the full Disler/Stripe foundation.
 
 You are the lead session. You create the team and spawn teammates.
 
-| Role | Model | Spawn mode | Purpose |
-|---|---|---|---|
-| Planner | Opus | Plan approval | Refine rough input → blueprint. Decompose into tasks. |
-| Builder(s) | Sonnet | Full autonomy | Claim tasks, write code, local checks, mark complete. |
-| Validator | Sonnet | Full autonomy, read-only | Verify deliverables against blueprint. Cannot edit code. |
+| Role | Model | Spawn mode | Tools | Purpose |
+|---|---|---|---|---|
+| Planner | Opus | Plan approval | All | Refine rough input → blueprint. Decompose into tasks. |
+| Builder(s) | Sonnet | Full autonomy | Read, Write, Edit, Glob, Grep — **NO Bash** | Claim tasks, write code, report verify commands. |
+| Validator | Sonnet | Full autonomy, read-only | Read, Glob, Grep — **NO Bash** | Verify deliverables against blueprint. Cannot edit code. |
+
+**Bash boundary:** The orchestrator (lead session) owns ALL shell execution. Builders and Validators run as background agents where Bash permission blocks indefinitely — their `tools:` frontmatter excludes it structurally. When a task requires runnable verification, the Builder writes the files and reports `Verify by running:` commands; the orchestrator runs them after the Builder completes.
 
 ## Pipeline
 
@@ -41,8 +43,10 @@ Only Phase 0 and Phase 4 involve you. See `docs/specs/2026-03-12-agent-team-blue
 
 | Hook | Target | Action |
 |---|---|---|
-| `TeammateIdle` | Planner | Validate blueprint completeness. `exit(2)` if sections missing. |
+| `TeammateIdle` | Planner | Validate blueprint completeness + enforce Criteria/Verify boundary (rejects shell verbs in Criteria). `exit(2)` if failing. |
 | `TaskCompleted` | Builders | Run linter + type check on output files. `exit(2)` if failing. Circuit breaker at 3. |
+
+**Task field contract:** Every blueprint task requires 8 fields, including the **Criteria** / **Verify (orchestrator runs)** split. Criteria must be statically verifiable by re-reading output (no "tests pass", "lint passes", "builds successfully"). Shell commands go in Verify, which the orchestrator runs.
 
 ## Project Structure
 
@@ -50,7 +54,7 @@ Only Phase 0 and Phase 4 involve you. See `docs/specs/2026-03-12-agent-team-blue
 .claude/
   settings.json           # CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS enabled
   agents/                 # planner.md, builder.md, validator.md
-  commands/prime-dev.md   # Pre-build ritual — load before every session
+  commands/prime-dev.md   # Pre-build ritual — load before every session (also at ~/.claude/commands/ for cross-repo use)
   hooks/validators/       # TeammateIdle + TaskCompleted gate scripts
 docs/
   agent-design-principles.md    # Disler/Stripe agentic engineering blueprint

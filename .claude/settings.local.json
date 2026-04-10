@@ -1,30 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(ls -la .claude/hooks/validators/ 2>/dev/null; echo \"---\"; ls -la .claude/hooks/ 2>/dev/null; echo \"---\"; find . -name \"*.sh\" -o -name \"*.js\" -o -name \"*.py\" | head -20)",
       "Bash(chmod +x .claude/hooks/validators/teammate-idle.sh .claude/hooks/validators/task-completed.sh)",
       "Bash(git remote:*)",
       "Bash(git branch:*)",
       "Bash(git add:*)",
       "Bash(git push:*)",
-      "Read(//c/Users/frede/CRQ-agent-workspace/**)",
-      "Read(//c/Users/frede/**)",
-      "Bash(cp C:/Users/frede/agent-team-blueprint/.claude/hooks/validators/task-completed.sh C:/Users/frede/CRQ-agent-workspace/.claude/hooks/validators/task-completed.sh && chmod +x C:/Users/frede/CRQ-agent-workspace/.claude/hooks/validators/task-completed.sh)",
       "Bash(git commit -m ':*)",
-      "Bash(ruff --version)",
-      "Bash(where python:*)",
-      "Bash(where py:*)",
-      "Bash(py --version)",
-      "Bash(uv --version)",
-      "Bash(uv run:*)",
-      "Bash(uv tool:*)",
-      "Bash(ruff check:*)",
-      "Bash(MSYS_NO_PATHCONV=1 uv run --no-project python calc.py 8 / 2)",
-      "Bash(MSYS_NO_PATHCONV=1 uv run --no-project python calc.py 5 / 0)",
-      "Bash(echo \"exit=$?\")",
-      "Bash(MSYS_NO_PATHCONV=1 uv run --no-project python calc.py 1 % 2)",
-      "Bash(MSYS_NO_PATHCONV=1 uv run --no-project python calc.py foo + 1)",
-      "Bash(MSYS_NO_PATHCONV=1 uv run --no-project --with pytest pytest -q)"
+      "Read(//c/Users/frede/**)"
     ]
   }
 }
