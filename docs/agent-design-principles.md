@@ -169,6 +169,19 @@ resolve_repo: { "path": "." }
 ```
 If not indexed: `index_folder { "path": "." }`. After any file edit: `index_file { "path": "/abs/path/to/file" }`.
 
+**Multi-agent flows — per-file index refresh:**
+
+In Builder/Validator pipelines, index hygiene is the **orchestrator's** responsibility, not the Builder's. Background agents cannot own this step: state management is code territory (see `agent-boundary-principles.md` → What Code Owns), and deterministic post-build operations belong to the orchestrator.
+
+The pattern is fixed:
+
+1. Every Builder Report Format MUST include `files_written: [abs paths]` as a typed output field.
+2. After the Validator accepts the build, the orchestrator iterates that list and calls `index_file { path }` once per file — before `team_delete`.
+3. **Never call `index_folder` or `incremental: true` as a routine step.** Full re-indexes are a one-time onboarding cost only. Per-file `index_file` is the only supported refresh path in a multi-agent flow.
+4. If a Builder report omits `files_written`, the orchestrator treats the build as incomplete and sends it back for revision. The field is mandatory.
+
+This enforces the jcodemunch-First Policy automatically at every team shutdown: the next session always starts against a current index without paying the full re-index cost.
+
 **Quick decision table:**
 
 | Task | Tool |
@@ -233,6 +246,8 @@ Crucially, these prompts must be **Self-Validating**. Incorporate hooks in the f
 
 If validation fails, the agent is forced into a self-correction loop without human intervention.
 
+**Schema Contract Rule:** The stop hook _is_ the schema contract. Every required output field an agent must produce needs a corresponding validation check in the stop hook. When you extend the agent's output schema — new fields, new required structures, new required counts — update the stop hook in the same commit. An agent that writes incomplete output and exits 0 has not proven completion; it has merely claimed it. This rule applies universally: every time you improve an agent's instructions, ask "does the stop hook enforce this?" If not, the improvement is aspirational, not enforced.
+
 ### The Prompt as Orchestration Layer
 
 In agentic engineering, a prompt is an instruction set for a specialized worker. Professional architects utilize **Metaprompting** — prompts that build prompts — to generate highly-vetted, consistent formats ensuring agents "build as you would."
@@ -243,6 +258,15 @@ A well-structured agent prompt template includes:
 - **Variables:** Dynamic inputs (files, task IDs, or Git Worktrees) defining the scope.
 - **Workflow:** A step-by-step roadmap for execution.
 - **Report Format:** A standardized output template (e.g., success/failure logs) that allows the orchestrator to react in real-time to the agent's progress.
+
+**Builder Report Format — required fields.** Any agent that writes or edits files (i.e. any Builder) must return a Report that includes, at minimum:
+
+- `summary` — one-line statement of what was built.
+- `files_written: [abs paths]` — **mandatory, typed list of every file the Builder created or edited.** The orchestrator reads this list to drive the per-file index refresh (`index_file { path }`) between Validator acceptance and `team_delete` (see §3 → Multi-agent flows — per-file index refresh). A report missing this field is an incomplete build and must be sent back for revision.
+- `verify` — the exact shell commands the orchestrator should run to verify the work (Builders cannot run Bash themselves; see Tool Permission Model).
+- `notes` — anything the Validator or orchestrator needs to know to judge the output.
+
+These fields are not suggestions. They are the typed output contract of a Builder skill (see `skill-contract-principles.md` Law 1). Missing or malformed fields fail the skill contract regardless of whether the code itself is correct.
 
 Standardization is the hallmark of the elite architect. By templating engineering patterns, even non-deterministic agents follow deterministic architectural constraints.
 

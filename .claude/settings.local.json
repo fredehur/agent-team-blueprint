@@ -7,7 +7,23 @@
       "Bash(git add:*)",
       "Bash(git push:*)",
       "Bash(git commit -m ':*)",
-      "Read(//c/Users/frede/**)"
+      "Read(//c/Users/frede/**)",
+      "Bash(git -C \"C:/Users/frede/Desktop/Projects\" add wiki/)",
+      "Bash(git -C \"C:/Users/frede/Desktop/Projects\" commit -m \"sync\\(blueprint\\): first sync — NO-BASH contract, criteria-verify-split concept\")",
+      "Bash(pwsh -NoProfile -Command \"Get-Item 'C:\\\\Users\\\\frede\\\\agent-team-blueprint\\\\.claude\\\\commands\\\\prime-dev.md','C:\\\\Users\\\\frede\\\\.claude\\\\commands\\\\prime-dev.md' | Select-Object FullName, LastWriteTime, Length\")",
+      "Bash(pip install:*)",
+      "Bash(py -3 --version)",
+      "Bash(uv tool:*)",
+      "Bash(jcodemunch-mcp --help)",
+      "Bash(uvx jcodemunch-mcp:*)",
+      "Bash(claude mcp:*)",
+      "Bash(cp /c/Users/frede/agent-team-blueprint/.claude/commands/prime-dev.md /c/Users/frede/.claude/commands/prime-dev.md)",
+      "Read(//c/Users/frede/agent-team-blueprint/**)",
+      "mcp__jcodemunch__list_repos",
+      "mcp__jcodemunch__index_folder",
+      "mcp__jcodemunch__search_symbols",
+      "mcp__jcodemunch__invalidate_cache",
+      "Bash(git checkout:*)"
     ]
   }
 }

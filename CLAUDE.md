@@ -48,6 +48,36 @@ Only Phase 0 and Phase 4 involve you. See `docs/specs/2026-03-12-agent-team-blue
 
 **Task field contract:** Every blueprint task requires 8 fields, including the **Criteria** / **Verify (orchestrator runs)** split. Criteria must be statically verifiable by re-reading output (no "tests pass", "lint passes", "builds successfully"). Shell commands go in Verify, which the orchestrator runs.
 
+## Code Exploration Policy
+
+Always use jCodemunch-MCP tools for code navigation. Never fall back to Read, Grep, Glob, or Bash for code exploration.
+
+```
+Read / Grep / Glob / Bash  →  last resort only (markdown, JSON data files)
+jcodemunch-mcp             →  default for ALL code navigation
+```
+
+**Start any session:**
+1. `list_repos` — confirm the project is indexed. If not: `index_folder { "path": "." }`
+
+**Finding code:**
+- symbol by name → `search_symbols` (add `kind=`, `language=`, `file_pattern=` to narrow)
+- string, comment, config value → `search_text` (supports regex, `context_lines`)
+
+**Reading code:**
+- before opening any file → `get_file_outline` first
+- one symbol → `get_symbol`
+- multiple symbols → `get_symbols` (batch)
+
+**Repo structure:**
+- `get_repo_outline` → dirs, languages, symbol counts
+- `get_file_tree` → file layout, filter with `path_prefix`
+
+**After editing/adding a file:** `index_folder { "path": ".", "incremental": true }` to keep the index fresh.
+**After deleting a file:** `invalidate_cache { "repo": "local/<repo-name>" }` — incremental does NOT prune stale symbols for deleted files.
+
+**Enforcement:** Prompt policy (this section) + tool hooks in `~/.claude/settings.json`. Full details: `docs/tools/jcodemunch-mcp.md`
+
 ## Project Structure
 
 ```

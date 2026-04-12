@@ -434,54 +434,106 @@ For hosted OpenAI-compatible providers, set `allow_remote_summarizer: true` in `
 
 ---
 
-## Enforcement via hooks (Claude Code)
+## Enforcement (two layers)
 
-Installing makes tools available. It does not guarantee use. Hooks intercept at the tool-call level before the native-tool shortcut fires.
+Installing makes tools available. It does **not** guarantee use. The common failure mode isn't forgetting — it's skipping. The agent sees the rule in CLAUDE.md and reaches for Read or Grep anyway because native tools feel faster under pressure. A prompt policy can't stop this. Hooks intercept at the tool-call level before the bypass happens.
 
-Three scripts provided in the repo (`AGENT_HOOKS.md`):
+### Layer 1: Prompt policy (soft — CLAUDE.md)
 
-| Hook | Trigger | What it does |
-|---|---|---|
-| Read Guard | `PreToolUse` | Blocks grep/find, redirects to index search |
-| Edit Guard | `PreToolUse` | Warns before modifying files without prior jCodeMunch read |
-| Index Hook | `PostToolUse` | Auto-reindexes files immediately after the agent edits them |
-
-**Windows:** PowerShell variants (`.ps1`) available alongside bash scripts. See `AGENT_HOOKS.md` → PowerShell section.
-
-### Minimal CLAUDE.md policy (soft enforcement)
+Add to CLAUDE.md. This tells the agent *which* tool to reach for — routing guidance.
 
 ```markdown
 ## Code Exploration Policy
 
-Use jCodemunch-MCP for all code navigation. Do not fall back to Read, Grep, Glob, or Bash for code exploration.
+Always use jCodemunch-MCP tools for code navigation. Never fall back to Read, Grep, Glob, or Bash for code exploration.
 
-Start any session: resolve_repo { "path": "." } — if not indexed: index_folder { "path": "." }
-Unfamiliar repo: suggest_queries after indexing.
-After editing any file: index_file { "path": "/abs/path/to/file" }
+Start any session:
+1. resolve_repo { "path": "." } — confirm indexed. If not: index_folder { "path": "." }
+2. suggest_queries — when the repo is unfamiliar
 
 Finding code:
-  symbol by name       → search_symbols (kind=, language=, file_pattern= to narrow)
-  string/comment/TODO  → search_text (is_regex=true, context_lines for context)
-  database columns     → search_columns
+- symbol by name → search_symbols (kind=, language=, file_pattern= to narrow)
+- string, comment, config value → search_text (supports regex, context_lines)
 
 Reading code:
-  before opening a file → get_file_outline first
-  one or more symbols   → get_symbol_source (symbol_id for one, symbol_ids[] for batch)
-  symbol + imports      → get_context_bundle (token_budget= to cap)
-  token-budgeted task   → get_ranked_context (query + token_budget)
-  line range only       → get_file_content (last resort)
+- before opening any file → get_file_outline first
+- one or more symbols → get_symbol_source (single ID → flat object; array → batch)
+- symbol + its imports → get_context_bundle
+- specific line range only → get_file_content (last resort)
+
+Repo structure:
+- get_repo_outline → dirs, languages, symbol counts
+- get_file_tree → file layout, filter with path_prefix
 
 Relationships & impact:
-  what imports a file        → find_importers
-  where is a name used       → find_references / check_references
-  what breaks if I change X  → get_blast_radius (include_depth_scores=true)
-  symbols changed in git     → get_changed_symbols
-  dead/unreachable code      → find_dead_code
-  most important symbols     → get_symbol_importance
-  class hierarchy            → get_class_hierarchy
+- what imports this file → find_importers
+- where is this name used → find_references
+- is this identifier used anywhere → check_references
+- file dependency graph → get_dependency_graph
+- what breaks if I change X → get_blast_radius (include_depth_scores=true, include_source=true)
+- what symbols changed since last commit → get_changed_symbols
+- find unreachable/dead code → find_dead_code
+- most important symbols by architecture → get_symbol_importance
+- class hierarchy → get_class_hierarchy
+- callers/callees of a symbol → get_call_hierarchy
+- high-risk symbols (complexity × churn) → get_hotspots
+- related symbols → get_related_symbols
+- diff two snapshots → get_symbol_diff
+- symbols by decorator → search_symbols(decorator="...") or get_blast_radius(decorator_filter="...")
 
+Session awareness:
+- starting a task → plan_turn (confidence + recommended symbols/files)
+- session history → get_session_context
+- after editing → register_edit (invalidates caches)
+
+Retrieval with token budget:
+- best-fit context for a task → get_ranked_context (query + token_budget)
+- bounded symbol bundle → get_context_bundle (add token_budget= to cap size)
+
+After editing a file: index_file { "path": "/abs/path/to/file" } to keep the index fresh.
 After a major refactor: audit_agent_config to catch stale symbol refs in CLAUDE.md.
 ```
+
+### Layer 2: Tool hooks (hard — Claude Code)
+
+Hooks intercept at the tool-call level and fire *before* the native tool executes.
+
+| Hook | Event | Script | What it does |
+|---|---|---|---|
+| Read Guard | `PreToolUse` on Bash/Grep/Glob | `jcodemunch_read_guard.ps1` | Blocks code-exploration calls (exit 2), passes builds/tests/git |
+| Edit Guard | `PreToolUse` on Edit/Write | `jcodemunch_edit_guard.ps1` | Soft warning by default; hard block with `JCODEMUNCH_HARD_BLOCK=1` |
+| Index Hook | `PostToolUse` on Edit/Write | `jcodemunch_index_hook.ps1` | Auto re-indexes modified files via `uvx jcodemunch-mcp index_file` |
+
+All hooks share `JcmHooks.psm1` (JSON parsing, logging, repo-root discovery).
+
+**Install:** Scripts live in `~/.claude/hooks/`. Wire into `~/.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Grep|Glob",
+        "hooks": [{"type": "command", "command": "pwsh -NoProfile ~/.claude/hooks/jcodemunch_read_guard.ps1"}]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [{"type": "command", "command": "pwsh -NoProfile ~/.claude/hooks/jcodemunch_edit_guard.ps1"}]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [{"type": "command", "command": "pwsh -NoProfile ~/.claude/hooks/jcodemunch_index_hook.ps1"}]
+      }
+    ]
+  }
+}
+```
+
+**Debug logging:** Set `JCODEMUNCH_DEBUG=1` — logs to `~/.claude/hooks/jcodemunch_*.log`.
+
+**Full hook source and bash variants:** [AGENT_HOOKS.md](https://github.com/jgravelle/jcodemunch-mcp/blob/main/AGENT_HOOKS.md)
 
 ---
 
