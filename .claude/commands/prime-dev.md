@@ -61,7 +61,6 @@ Answer each line:
 - [ ] Blueprint tasks use the **Criteria** (static, re-readable) / **Verify (orchestrator runs)** (shell) split — `teammate-idle.sh` rejects shell verbs in Criteria
 - [ ] Builder output will be verified by a Validator before acceptance
 - [ ] Every Builder Report Format includes a `files_written: [abs paths]` field — orchestrator reads it to confirm files changed
-- [ ] Orchestrator will call `index_folder { path: ".", incremental: true }` once after each Builder round — never a full re-index
 - [ ] Independent tasks will run in parallel (`run_in_background: true`)
 - [ ] All background Agent calls use `mode: "bypassPermissions"` — no exceptions
 - [ ] Stop hooks are wired for self-validation
@@ -103,19 +102,9 @@ One skill per phase. The blueprint owns execution — skills are the bookends ar
 The execution pattern is fixed by the blueprint:
 
 ```
-TeamCreate → spawn Builders (Agent tool, bypassPermissions, no Bash) → Validator → Incremental index refresh → TeamDelete
+TeamCreate → spawn Builders (Agent tool, bypassPermissions, no Bash) → Validator → TeamDelete
 ```
 
 Proceed directly to `TeamCreate`. The team was declared in Step 2. Build it now.
-
-**Incremental index refresh (between Validator pass and TeamDelete):**
-
-After the Validator accepts the build, the orchestrator calls `index_folder { path: ".", incremental: true }` once. This re-indexes only files that changed since the last index — not a full re-index. This is a deterministic state-management operation — code territory, owned by the orchestrator, never delegated to a Builder or Validator.
-
-Rules:
-- **After writes/edits:** `index_folder { path: ".", incremental: true }` — one call covering all changed files. Never a full re-index. Full re-indexes are a one-time onboarding cost, not a routine step.
-- **After deletes:** `invalidate_cache { repo: "local/<repo-name>" }` — incremental does NOT prune stale symbols for deleted files.
-- **Skip if no files changed** — read-only sessions (debugging, exploration) don't touch the index.
-- **If a Builder's report is missing `files_written`, treat the build as incomplete** and send it back for revision. The field confirms at least one file was written (so index refresh is warranted).
 
 The blueprint owns execution. No skill invocation needed for this step.
