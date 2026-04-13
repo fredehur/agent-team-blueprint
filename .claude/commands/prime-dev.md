@@ -54,12 +54,13 @@ If the task is trivial (single file, <3 steps), state why a team is not warrante
 Answer each line:
 
 - [ ] Teams enabled: `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` confirmed
-- [ ] jcodemunch will be used for all code navigation (`get_file_outline`, `search_symbols`, `get_symbol_source`) — Read/Grep only for non-indexed files
+- [ ] jcodemunch will be used for all code navigation (`get_file_outline`, `search_symbols`, `get_symbol`, `get_symbols`) — Read/Grep only for non-indexed files
 - [ ] Orchestrator will NOT write implementation code
 - [ ] Orchestrator owns ALL Bash — every test, lint, build, script runs in the lead session
 - [ ] Builder/Validator have NO Bash in their `tools:` frontmatter — enforced structurally
 - [ ] Blueprint tasks use the **Criteria** (static, re-readable) / **Verify (orchestrator runs)** (shell) split — `teammate-idle.sh` rejects shell verbs in Criteria
 - [ ] Builder output will be verified by a Validator before acceptance
+- [ ] Every Builder Report Format includes a `files_written: [abs paths]` field — orchestrator reads it to confirm files changed
 - [ ] Independent tasks will run in parallel (`run_in_background: true`)
 - [ ] All background Agent calls use `mode: "bypassPermissions"` — no exceptions
 - [ ] Stop hooks are wired for self-validation
